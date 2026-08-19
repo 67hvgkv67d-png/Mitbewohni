@@ -1,0 +1,21 @@
+CREATE TABLE `profiles` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`age` integer NOT NULL,
+	`gender` text NOT NULL,
+	`city` text NOT NULL,
+	`district` text DEFAULT '' NOT NULL,
+	`move_in` text DEFAULT '' NOT NULL,
+	`housing` text DEFAULT 'Ich suche eine Wohnung' NOT NULL,
+	`about` text NOT NULL,
+	`looking_for` text NOT NULL,
+	`preferred_gender` text DEFAULT 'Alle' NOT NULL,
+	`dislikes` text DEFAULT '' NOT NULL,
+	`important` text DEFAULT '' NOT NULL,
+	`accessibility` text DEFAULT '' NOT NULL,
+	`contact_name` text NOT NULL,
+	`contact_type` text NOT NULL,
+	`contact_value` text NOT NULL,
+	`image_key` text,
+	`created_at` text NOT NULL
+);

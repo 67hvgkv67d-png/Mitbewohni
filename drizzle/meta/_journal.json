@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787166647542,
+      "tag": "0000_lethal_forgotten_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787166686612,
+      "tag": "0001_magenta_stark_industries",
+      "breakpoints": true
+    }
+  ]
+}
