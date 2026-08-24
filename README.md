@@ -1,4 +1,4 @@
-# Mitbewohni – WG-Finder
+# Mitbewohni
 
 Eine barrierearme Plattform für Menschen, die eine Mitbewohnerin oder einen Mitbewohner suchen.
 
@@ -39,3 +39,9 @@ Die Plattform ist ein funktionsfähiger Entwurf. Vor dem Einsatz mit echten pers
 ## Vorschau
 
 [wg-finder-steckbriefe.mahu350.chatgpt.site](https://wg-finder-steckbriefe.mahu350.chatgpt.site/)
+
+## Öffentlicher Entwurf
+
+[67hvgkv67d-png.github.io/Mitbewohni](https://67hvgkv67d-png.github.io/Mitbewohni/)
+
+Auf der GitHub-Pages-Seite bleiben neue Steckbriefe nur im jeweiligen Browser. Sie werden nicht mit anderen Personen geteilt.

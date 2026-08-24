@@ -9,6 +9,8 @@ type Profile = {
   gender: string;
   city: string;
   district: string;
+  searchCity: string;
+  searchDistrict: string;
   moveIn: string;
   housing: string;
   about: string;
@@ -16,40 +18,52 @@ type Profile = {
   preferredGender: string;
   dislikes: string;
   important: string;
+  wgSize: string;
   accessibility: string;
   contactName: string;
-  contactType: string;
-  contactValue: string;
+  contactEmail: string;
+  contactPhone: string;
   imageKey: string | null;
+  imageUrl?: string;
   createdAt: string;
 };
 
 type ApiProfile = Record<string, unknown>;
 type View = "search" | "create" | "saved";
+const SITE_VERSION = "1.2.2";
+const DRAFT_STORAGE_KEY = "mitbewohni-draft-profiles";
+
+function isGitHubDraft() {
+  return typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
+}
+
+function assetPath(file: string) {
+  return `${isGitHubDraft() ? "/Mitbewohni" : ""}/${file}`;
+}
 
 const demoProfiles: Profile[] = [
   {
-    id: "demo-lena", name: "Lena", age: 28, gender: "Frau", city: "München", district: "Pasing",
+    id: "demo-lena", name: "Lena", age: 28, gender: "Frau", city: "München", district: "Pasing", searchCity: "München", searchDistrict: "Pasing",
     moveIn: "Ab Oktober 2026", housing: "Ich suche eine Wohnung", about: "Ich mag Musik, Kochen und Spaziergänge.",
     lookingFor: "Du bist freundlich. Du bist ungefähr in meinem Alter.", preferredGender: "Alle",
     dislikes: "Sehr laute Musik in der Nacht.", important: "Wir sprechen über den Haushalt. Jede Person hat Zeit für sich.",
-    accessibility: "Aufzug wichtig", contactName: "Wohnberatung Beispiel", contactType: "E-Mail",
-    contactValue: "beratung@beispiel.de", imageKey: null, createdAt: "2026-08-18T10:00:00.000Z",
+    wgSize: "3 Personen", accessibility: "Aufzug wichtig", contactName: "Wohnberatung Beispiel",
+    contactEmail: "beratung@beispiel.de", contactPhone: "", imageKey: null, createdAt: "2026-08-18T10:00:00.000Z",
   },
   {
-    id: "demo-tobias", name: "Tobias", age: 34, gender: "Mann", city: "München", district: "Giesing",
+    id: "demo-tobias", name: "Tobias", age: 34, gender: "Mann", city: "München", district: "Giesing", searchCity: "München", searchDistrict: "Giesing",
     moveIn: "Ab sofort", housing: "Ich habe eine Wohnung", about: "Ich mag Fußball, Tiere und Brettspiele.",
     lookingFor: "Du bist ruhig und magst Tiere.", preferredGender: "Mann", dislikes: "Rauchen in der Wohnung.",
-    important: "Wir kochen manchmal zusammen. Mein Hund wohnt mit uns.", accessibility: "Stufen sind in Ordnung",
-    contactName: "Wohnberatung Beispiel", contactType: "Telefon", contactValue: "0123 456789", imageKey: null,
+    important: "Wir kochen manchmal zusammen. Mein Hund wohnt mit uns.", wgSize: "2 Personen", accessibility: "Stufen sind in Ordnung",
+    contactName: "Wohnberatung Beispiel", contactEmail: "", contactPhone: "0123 456789", imageKey: null,
     createdAt: "2026-08-14T10:00:00.000Z",
   },
   {
-    id: "demo-samira", name: "Samira", age: 25, gender: "Frau", city: "Augsburg", district: "Innenstadt",
+    id: "demo-samira", name: "Samira", age: 25, gender: "Frau", city: "Augsburg", district: "Innenstadt", searchCity: "Augsburg", searchDistrict: "Innenstadt",
     moveIn: "Ab November 2026", housing: "Ich suche eine Wohnung", about: "Ich male gern. Ich mag Cafés und Serien.",
     lookingFor: "Du bist offen und zuverlässig.", preferredGender: "Frau", dislikes: "Streit und Unordnung.",
-    important: "Ein ruhiges Zuhause. Ein Plan für Putzen und Einkaufen.", accessibility: "Rollstuhl-gerecht",
-    contactName: "EUTB Beispiel", contactType: "E-Mail", contactValue: "kontakt@beispiel.de", imageKey: null,
+    important: "Ein ruhiges Zuhause. Ein Plan für Putzen und Einkaufen.", wgSize: "4 Personen", accessibility: "Rollstuhl-gerecht",
+    contactName: "EUTB Beispiel", contactEmail: "kontakt@beispiel.de", contactPhone: "", imageKey: null,
     createdAt: "2026-08-10T10:00:00.000Z",
   },
 ];
@@ -58,12 +72,17 @@ function normalize(row: ApiProfile): Profile {
   const value = (camel: string, snake: string) => row[camel] ?? row[snake] ?? "";
   return {
     id: String(row.id), name: String(row.name), age: Number(row.age), gender: String(row.gender),
-    city: String(row.city), district: String(row.district ?? ""), moveIn: String(value("moveIn", "move_in")),
+    city: String(row.city), district: String(row.district ?? ""),
+    searchCity: String(value("searchCity", "search_city") || row.city), searchDistrict: String(value("searchDistrict", "search_district") || row.district || ""),
+    moveIn: String(value("moveIn", "move_in")),
     housing: String(row.housing ?? ""), about: String(row.about), lookingFor: String(value("lookingFor", "looking_for")),
     preferredGender: String(value("preferredGender", "preferred_gender")), dislikes: String(row.dislikes ?? ""),
-    important: String(row.important ?? ""), accessibility: String(row.accessibility ?? ""),
-    contactName: String(value("contactName", "contact_name")), contactType: String(value("contactType", "contact_type")),
-    contactValue: String(value("contactValue", "contact_value")), imageKey: value("imageKey", "image_key") ? String(value("imageKey", "image_key")) : null,
+    important: String(row.important ?? ""), wgSize: String(value("wgSize", "wg_size") || "Egal"), accessibility: String(row.accessibility ?? ""),
+    contactName: String(value("contactName", "contact_name")),
+    contactEmail: String(value("contactEmail", "contact_email") || (value("contactType", "contact_type") === "E-Mail" ? value("contactValue", "contact_value") : "")),
+    contactPhone: String(value("contactPhone", "contact_phone") || (value("contactType", "contact_type") === "Telefon" ? value("contactValue", "contact_value") : "")),
+    imageKey: value("imageKey", "image_key") ? String(value("imageKey", "image_key")) : null,
+    imageUrl: row.imageUrl ? String(row.imageUrl) : undefined,
     createdAt: String(value("createdAt", "created_at")),
   };
 }
@@ -100,6 +119,14 @@ export default function WgFinder() {
     setFavorites(readIds("wg-favorites"));
     setHidden(readIds("wg-hidden"));
     try { setNotes(JSON.parse(localStorage.getItem("wg-notes") || "{}")); } catch { setNotes({}); }
+    if (isGitHubDraft()) {
+      try {
+        const drafts = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || "[]") as ApiProfile[];
+        setProfiles([...drafts.map(normalize), ...demoProfiles]);
+      } catch { setProfiles(demoProfiles); }
+      setLoading(false);
+      return;
+    }
     fetch("/api/profiles")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((rows: ApiProfile[]) => setProfiles(rows.map(normalize)))
@@ -107,12 +134,12 @@ export default function WgFinder() {
       .finally(() => setLoading(false));
   }, []);
 
-  const cities = useMemo(() => ["Alle Orte", ...Array.from(new Set(profiles.map((p) => p.city))).sort()], [profiles]);
+  const cities = useMemo(() => ["Alle Orte", ...Array.from(new Set(profiles.map((p) => p.searchCity))).sort()], [profiles]);
   const visible = useMemo(() => profiles.filter((profile) => {
-    const text = `${profile.name} ${profile.city} ${profile.district} ${profile.about} ${profile.lookingFor}`.toLowerCase();
+    const text = `${profile.name} ${profile.city} ${profile.district} ${profile.searchCity} ${profile.searchDistrict} ${profile.about} ${profile.lookingFor}`.toLowerCase();
     const accessFits = access === "Alle" || (access === "Rollstuhl-gerecht" ? profile.accessibility.includes("Rollstuhl") : profile.accessibility.includes("Aufzug"));
     return !hidden.includes(profile.id) && (!query || text.includes(query.toLowerCase())) &&
-      (city === "Alle Orte" || profile.city === city) && (gender === "Alle" || profile.gender === gender) &&
+      (city === "Alle Orte" || profile.searchCity === city) && (gender === "Alle" || profile.gender === gender) &&
       (housing === "Alle" || profile.housing === housing) && accessFits;
   }), [profiles, hidden, query, city, gender, housing, access]);
 
@@ -146,10 +173,11 @@ export default function WgFinder() {
     <main>
       <a className="skip-link" href="#inhalt">Zum Inhalt</a>
       <header className="site-header">
-        <button className="brand" onClick={() => setView("search")} aria-label="WG-Finder Startseite">
+        <button className="brand" onClick={() => setView("search")} aria-label="Mitbewohni Startseite">
           <span className="brand-mark" aria-hidden="true">🏠</span>
-          <span>WG-Finder</span>
+          <span>Mitbewohni</span>
         </button>
+        <span className="site-version">Version {SITE_VERSION}</span>
         <nav aria-label="Haupt-Menü">
           <NavButton active={view === "search"} onClick={() => setView("search")} icon="🔎">Suchen</NavButton>
           <NavButton active={view === "create"} onClick={() => setView("create")} icon="✏️">Steckbrief machen</NavButton>
@@ -169,7 +197,7 @@ export default function WgFinder() {
                   <button className="secondary" onClick={() => setView("create")}>✏️ Steckbrief machen</button>
                 </div>
               </div>
-              <img src="/wg-gemeinsam.jpg" alt="Drei Personen spielen gemeinsam in einer Wohnung." />
+              <img src={assetPath("wg-gemeinsam.jpg")} alt="Drei Personen spielen gemeinsam in einer Wohnung." />
             </div>
 
             <div className="search-row">
@@ -185,7 +213,7 @@ export default function WgFinder() {
 
             {showFilters && (
               <div className="filter-panel">
-                <Select label="📍 Ort" value={city} onChange={setCity} options={cities} />
+                <Select label="🏠 Ort für die WG" value={city} onChange={setCity} options={cities} />
                 <Select label="👤 Person" value={gender} onChange={setGender} options={["Alle", "Frau", "Mann", "Divers"]} />
                 <Select label="♿ Barriere-Freiheit" value={access} onChange={setAccess} options={["Alle", "Rollstuhl-gerecht", "Aufzug wichtig"]} />
                 <Select label="🔑 Wohnung" value={housing} onChange={setHousing} options={["Alle", "Ich habe eine Wohnung", "Ich suche eine Wohnung"]} />
@@ -259,7 +287,8 @@ function ProfileCard({ profile, favorite, onFavorite, onOpen }: { profile: Profi
         <Avatar profile={profile} />
         <div className="card-content">
           <div className="name-row"><h3>{profile.name}, {profile.age}</h3><span>{profile.gender}</span></div>
-          <p className="place">📍 {profile.city}{profile.district ? ` · ${profile.district}` : ""}</p>
+          <p className="place">🏠 WG gesucht in {profile.searchCity}{profile.searchDistrict ? ` · ${profile.searchDistrict}` : ""}</p>
+          <p className="entry-date">📅 Eingetragen am {dateLabel(profile.createdAt)}</p>
           <p className="card-about">{profile.about}</p>
           <div className="tag-row">
             {profile.accessibility && <span>♿ {profile.accessibility}</span>}
@@ -273,12 +302,13 @@ function ProfileCard({ profile, favorite, onFavorite, onOpen }: { profile: Profi
 }
 
 function Avatar({ profile, large = false }: { profile: Profile; large?: boolean }) {
+  if (profile.imageUrl) return <img className={large ? "avatar large" : "avatar"} src={profile.imageUrl} alt={`Foto von ${profile.name}`} />;
   if (profile.imageKey) return <img className={large ? "avatar large" : "avatar"} src={`/api/bilder/${profile.imageKey}`} alt={`Foto von ${profile.name}`} />;
   return <div className={large ? "avatar large avatar-letter" : "avatar avatar-letter"} style={{ background: avatarColor(profile.name) }} aria-label={`Kein Foto von ${profile.name}`}>{profile.name.slice(0, 1)}</div>;
 }
 
 function Empty({ title, action, onAction }: { title: string; action: string; onAction: () => void }) {
-  return <div className="empty"><img src="/mitbewohner-finden.jpg" alt="Lupe mit zwei Personen." /><h2>{title}</h2><button className="secondary" onClick={onAction}>{action}</button></div>;
+  return <div className="empty"><img src={assetPath("mitbewohner-finden.jpg")} alt="Lupe mit zwei Personen." /><h2>{title}</h2><button className="secondary" onClick={onAction}>{action}</button></div>;
 }
 
 function ProfileDialog({ profile, favorite, note, onNote, onFavorite, onHide, onClose }: { profile: Profile; favorite: boolean; note: string; onNote: (text: string) => void; onFavorite: () => void; onHide: () => void; onClose: () => void }) {
@@ -304,26 +334,30 @@ function ProfileDialog({ profile, favorite, note, onNote, onFavorite, onHide, on
         </div>
         <div className="profile-head">
           <Avatar profile={profile} large />
-          <div><p className="eyebrow">Ich suche eine Mitbewohner:in</p><h2 id="profile-title">{profile.name}, {profile.age}</h2><p>📍 {profile.city}{profile.district ? ` · ${profile.district}` : ""}</p><p>📅 {profile.moveIn}</p></div>
+          <div><p className="eyebrow">Ich suche eine Mitbewohner:in</p><h2 id="profile-title">{profile.name}, {profile.age}</h2><p>🏠 WG gesucht in {profile.searchCity}{profile.searchDistrict ? ` · ${profile.searchDistrict}` : ""}</p><p>📍 Wohnt jetzt in {profile.city}{profile.district ? ` · ${profile.district}` : ""}</p><p>📅 Einzug: {profile.moveIn || "Keine Angabe"}</p><p>📅 Eingetragen am {dateLabel(profile.createdAt)}</p></div>
         </div>
         <div className="detail-grid">
           <InfoBox icon="🙂" title="So bin ich" text={profile.about} />
           <InfoBox icon="🔎" title="Wen ich suche" text={`${profile.lookingFor}${profile.preferredGender !== "Alle" ? ` Gesucht: ${profile.preferredGender}.` : ""}`} />
           <InfoBox icon="🚫" title="Das mag ich nicht" text={profile.dislikes || "Keine Angabe."} />
-          <InfoBox icon="🤝" title="Das ist mir wichtig" text={profile.important || "Keine Angabe."} />
+          <InfoBox icon="🤝" title="Das ist mir beim Zusammenleben wichtig" text={profile.important || "Keine Angabe."} />
+          <InfoBox icon="👥" title="WG-Größe" text={profile.wgSize || "Egal"} />
           <InfoBox icon="♿" title="Barriere-Freiheit" text={profile.accessibility || "Keine Angabe."} />
           <InfoBox icon="🔑" title="Wohnung" text={profile.housing} />
         </div>
         <div className="contact-box">
           <div><span aria-hidden="true">💬</span><div><h3>Kontakt</h3><p>{profile.contactName}</p></div></div>
-          {profile.contactType === "E-Mail" ? <a href={`mailto:${profile.contactValue}`}>✉️ E-Mail schreiben</a> : <a href={`tel:${profile.contactValue.replace(/\s/g, "")}`}>☎️ {profile.contactValue}</a>}
+          <div className="contact-links">
+            {profile.contactEmail && <a href={`mailto:${profile.contactEmail}`}>✉️ {profile.contactEmail}</a>}
+            {profile.contactPhone && <a href={`tel:${profile.contactPhone.replace(/\s/g, "")}`}>☎️ {profile.contactPhone}</a>}
+          </div>
         </div>
         <label className="note-box"><span>📝 Meine Notiz</span><textarea defaultValue={note} placeholder="Nur auf diesem Gerät" onChange={(event) => {
           if (noteTimer.current) clearTimeout(noteTimer.current);
           const value = event.target.value;
           noteTimer.current = setTimeout(() => onNote(value), 250);
         }} /></label>
-        <div className="dialog-footer"><span>📅 Stand: {dateLabel(profile.createdAt)}</span><button className="hide-button" onClick={onHide}>🙈 Steckbrief ausblenden</button></div>
+        <div className="dialog-footer"><span>📅 Eingetragen am {dateLabel(profile.createdAt)}</span><button className="hide-button" onClick={onHide}>🙈 Steckbrief ausblenden</button></div>
       </section>
       <PrintSheet profile={profile} />
     </div>
@@ -337,18 +371,42 @@ function InfoBox({ icon, title, text }: { icon: string; title: string; text: str
 function PrintSheet({ profile }: { profile: Profile }) {
   return (
     <article className="print-sheet">
-      <header><div><p>🏠 WG-Finder</p><h1>Ich suche eine Mitbewohner:in</h1></div><span>Stand: {dateLabel(profile.createdAt)}</span></header>
-      <div className="print-person"><Avatar profile={profile} large /><div><h2>{profile.name}, {profile.age}</h2><p>📍 {profile.city}{profile.district ? ` · ${profile.district}` : ""}</p><p>📅 {profile.moveIn}</p><p>🔑 {profile.housing}</p></div></div>
+      <header><div><p>🏠 Mitbewohni</p><h1>Ich suche eine Mitbewohner:in</h1></div><span>Eingetragen am {dateLabel(profile.createdAt)}</span></header>
+      <div className="print-person"><Avatar profile={profile} large /><div><h2>{profile.name}, {profile.age}</h2><p>🏠 WG gesucht in {profile.searchCity}{profile.searchDistrict ? ` · ${profile.searchDistrict}` : ""}</p><p>📍 Wohnt jetzt in {profile.city}{profile.district ? ` · ${profile.district}` : ""}</p><p>📅 Einzug: {profile.moveIn || "Keine Angabe"}</p><p>👥 WG-Größe: {profile.wgSize || "Egal"}</p><p>🔑 {profile.housing}</p></div></div>
       <div className="print-grid">
         <InfoBox icon="🙂" title="So bin ich und das mag ich" text={profile.about} />
         <InfoBox icon="🔎" title="So wünsche ich mir meine Mitbewohner:in" text={profile.lookingFor} />
         <InfoBox icon="🚫" title="Das mag ich nicht" text={profile.dislikes || "Keine Angabe."} />
-        <InfoBox icon="🤝" title="Das ist mir wichtig" text={profile.important || "Keine Angabe."} />
+        <InfoBox icon="🤝" title="Das ist mir beim Zusammenleben wichtig" text={profile.important || "Keine Angabe."} />
       </div>
       <section className="print-access"><h3>♿ Barriere-Freiheit</h3><p>{profile.accessibility || "Keine Angabe."}</p></section>
-      <footer><div><h3>💬 Kontakt</h3><p>{profile.contactName}</p><strong>{profile.contactType}: {profile.contactValue}</strong></div><span>Steckbrief vom WG-Finder</span></footer>
+      <footer><div><h3>💬 Kontakt</h3><p>{profile.contactName}</p>{profile.contactEmail && <strong>✉️ {profile.contactEmail}</strong>}{profile.contactPhone && <strong>☎️ {profile.contactPhone}</strong>}</div><span>Steckbrief von Mitbewohni</span></footer>
     </article>
   );
+}
+
+async function makeDraftProfile(data: FormData): Promise<Profile> {
+  const text = (name: string) => String(data.get(name) || "").trim();
+  let imageUrl: string | undefined;
+  const photo = data.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    imageUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Das Foto konnte nicht gelesen werden."));
+      reader.readAsDataURL(photo);
+    });
+  }
+  return {
+    id: `entwurf-${crypto.randomUUID()}`,
+    name: text("name"), age: Number(text("age")), gender: text("gender"),
+    city: text("city"), district: text("district"), searchCity: text("searchCity"), searchDistrict: text("searchDistrict"),
+    moveIn: text("moveIn"), housing: text("housing"), about: text("about"), lookingFor: text("lookingFor"),
+    preferredGender: text("preferredGender") || "Alle", dislikes: text("dislikes"), important: text("important"),
+    wgSize: text("wgSize") || "Egal", accessibility: text("accessibility"), contactName: text("contactName"),
+    contactEmail: text("contactEmail"), contactPhone: text("contactPhone"), imageKey: null, imageUrl,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 function CreateProfile({ onCreated }: { onCreated: (profile: Profile) => void }) {
@@ -370,7 +428,21 @@ function CreateProfile({ onCreated }: { onCreated: (profile: Profile) => void })
     event.preventDefault();
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/profiles", { method: "POST", body: new FormData(event.currentTarget) });
+      const data = new FormData(event.currentTarget);
+      if (!String(data.get("contactEmail") || "").trim() && !String(data.get("contactPhone") || "").trim()) {
+        throw new Error("Bitte gib eine E-Mail-Adresse oder eine Telefon-Nummer an.");
+      }
+      if (isGitHubDraft()) {
+        const profile = await makeDraftProfile(data);
+        try {
+          const saved = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || "[]") as ApiProfile[];
+          const storedProfile = profile.imageUrl && profile.imageUrl.length > 900_000 ? { ...profile, imageUrl: undefined } : profile;
+          localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify([storedProfile, ...saved]));
+        } catch { /* Der Steckbrief bleibt bis zum Neuladen sichtbar. */ }
+        onCreated(profile);
+        return;
+      }
+      const response = await fetch("/api/profiles", { method: "POST", body: data });
       const body = await response.json() as ApiProfile & { error?: string };
       if (!response.ok) throw new Error(body.error || "Der Steckbrief konnte nicht gespeichert werden.");
       onCreated(normalize(body));
@@ -383,9 +455,9 @@ function CreateProfile({ onCreated }: { onCreated: (profile: Profile) => void })
     <section className="create-page" aria-labelledby="create-title">
       <div className="create-intro">
         <div><p className="eyebrow">✏️ Dein Steckbrief</p><h1 id="create-title">Erzähle etwas über dich.</h1></div>
-        <img src="/steckbrief-machen.jpg" alt="Eine Hand klebt ein Foto auf einen Steckbrief." />
+        <img src={assetPath("steckbrief-machen.jpg")} alt="Eine Hand klebt ein Foto auf einen Steckbrief." />
       </div>
-      <div className="privacy-note"><span aria-hidden="true">🛡️</span><p><strong>Dieser Entwurf ist noch nicht für echte Daten freigegeben.</strong><br />Nutze jetzt bitte nur Beispiel-Daten.</p></div>
+      <div className="privacy-note"><span aria-hidden="true">🛡️</span><p><strong>Dieser Entwurf ist noch nicht für echte Daten freigegeben.</strong><br />{isGitHubDraft() ? "Deine Angaben bleiben nur in diesem Browser. Nutze bitte nur Beispiel-Daten." : "Nutze jetzt bitte nur Beispiel-Daten."}</p></div>
       <div className="steps" aria-label={`Schritt ${step} von 3`}>
         {[1, 2, 3].map((number) => <div key={number} className={number <= step ? "step done" : "step"}><span>{number < step ? "✓" : number}</span><b>{number === 1 ? "Über mich" : number === 2 ? "Zusammen wohnen" : "Kontakt"}</b></div>)}
       </div>
@@ -396,8 +468,10 @@ function CreateProfile({ onCreated }: { onCreated: (profile: Profile) => void })
             <Field name="name" label="👤 Mein Vorname" placeholder="Zum Beispiel: Lena" required />
             <Field name="age" label="🎂 Mein Alter" type="number" min="18" max="99" placeholder="28" required />
             <Choice name="gender" label="🙂 Ich bin" options={["Frau", "Mann", "Divers"]} required />
-            <Field name="city" label="📍 Ort" placeholder="Zum Beispiel: München" required />
-            <Field name="district" label="🏘️ Stadt-Teil" placeholder="Zum Beispiel: Pasing" />
+            <Field name="city" label="📍 Ich wohne jetzt in" placeholder="Zum Beispiel: München" required />
+            <Field name="district" label="🏘️ Mein Stadt-Teil" placeholder="Zum Beispiel: Pasing" />
+            <Field name="searchCity" label="🏠 Hier suche ich eine WG" placeholder="Zum Beispiel: Dresden" required />
+            <Field name="searchDistrict" label="🔎 Dort suche ich im Stadt-Teil" placeholder="Zum Beispiel: Neustadt" />
             <Field name="moveIn" label="📅 Einzug" placeholder="Zum Beispiel: Ab Oktober" />
           </div>
         </div>
@@ -407,15 +481,19 @@ function CreateProfile({ onCreated }: { onCreated: (profile: Profile) => void })
           <TextArea name="lookingFor" label="🔎 So wünsche ich mir meine Mitbewohner:in" placeholder="Du bist freundlich und ruhig." required />
           <Choice name="preferredGender" label="👥 Ich suche" options={["Alle", "Frau", "Mann", "Divers"]} defaultValue="Alle" />
           <TextArea name="dislikes" label="🚫 Das mag ich nicht" placeholder="Zum Beispiel: Rauchen in der Wohnung." />
-          <TextArea name="important" label="🤝 Das ist mir wichtig" placeholder="Zum Beispiel: Wir machen einen Putz-Plan." />
+          <TextArea name="important" label="🤝 Das ist mir beim Zusammenleben wichtig" placeholder="Zum Beispiel: Wir machen einen Putz-Plan." />
+          <Choice name="wgSize" label="👥 So groß soll meine WG sein" options={["Egal", "2 Personen", "3 Personen", "4 Personen", "5 oder mehr Personen"]} defaultValue="Egal" />
           <Choice name="housing" label="🔑 Wohnung" options={["Ich suche eine Wohnung", "Ich habe eine Wohnung"]} defaultValue="Ich suche eine Wohnung" />
           <Choice name="accessibility" label="♿ Barriere-Freiheit" options={["Keine Angabe", "Rollstuhl-gerecht", "Aufzug wichtig", "Stufen sind in Ordnung"]} defaultValue="Keine Angabe" />
         </div>
 
         <div className={step === 3 ? "form-step" : "form-step hidden-step"}>
           <Field name="contactName" label="👤 Kontakt-Person" placeholder="Name oder Beratungs-Stelle" required />
-          <Choice name="contactType" label="💬 Kontakt-Art" options={["E-Mail", "Telefon"]} defaultValue="E-Mail" />
-          <Field name="contactValue" label="✉️ E-Mail oder Telefon" placeholder="Kontakt" required />
+          <div className="field-grid">
+            <Field name="contactEmail" label="✉️ E-Mail" type="email" autoComplete="email" placeholder="name@beispiel.de" />
+            <Field name="contactPhone" label="☎️ Telefon" type="tel" autoComplete="tel" placeholder="0123 456789" />
+          </div>
+          <p className="contact-hint">💬 Bitte gib mindestens eine Kontakt-Möglichkeit an.</p>
           <label className="check"><input type="checkbox" required /><span>✅ Ich habe alle Angaben geprüft.</span></label>
           {error && <p className="error" role="alert">⚠️ {error}</p>}
         </div>

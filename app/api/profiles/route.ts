@@ -7,6 +7,8 @@ const createTable = `CREATE TABLE IF NOT EXISTS profiles (
   gender TEXT NOT NULL,
   city TEXT NOT NULL,
   district TEXT NOT NULL DEFAULT '',
+  search_city TEXT NOT NULL DEFAULT '',
+  search_district TEXT NOT NULL DEFAULT '',
   move_in TEXT NOT NULL DEFAULT '',
   housing TEXT NOT NULL DEFAULT 'Ich suche eine Wohnung',
   about TEXT NOT NULL,
@@ -14,10 +16,13 @@ const createTable = `CREATE TABLE IF NOT EXISTS profiles (
   preferred_gender TEXT NOT NULL DEFAULT 'Alle',
   dislikes TEXT NOT NULL DEFAULT '',
   important TEXT NOT NULL DEFAULT '',
+  wg_size TEXT NOT NULL DEFAULT 'Egal',
   accessibility TEXT NOT NULL DEFAULT '',
   contact_name TEXT NOT NULL,
   contact_type TEXT NOT NULL,
   contact_value TEXT NOT NULL,
+  contact_email TEXT NOT NULL DEFAULT '',
+  contact_phone TEXT NOT NULL DEFAULT '',
   image_key TEXT,
   created_at TEXT NOT NULL
 )`;
@@ -44,32 +49,32 @@ async function prepareDb() {
   if ((count?.total ?? 0) > 0) return;
 
   const insert = `INSERT INTO profiles (
-    id, name, age, gender, city, district, move_in, housing, about,
-    looking_for, preferred_gender, dislikes, important, accessibility,
-    contact_name, contact_type, contact_value, image_key, created_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    id, name, age, gender, city, district, search_city, search_district, move_in, housing, about,
+    looking_for, preferred_gender, dislikes, important, wg_size, accessibility,
+    contact_name, contact_type, contact_value, contact_email, contact_phone, image_key, created_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   await runtime.DB.batch([
     runtime.DB.prepare(insert).bind(
-      "demo-lena", "Lena", 28, "Frau", "München", "Pasing", "Ab Oktober 2026",
+      "demo-lena", "Lena", 28, "Frau", "München", "Pasing", "München", "Pasing", "Ab Oktober 2026",
       "Ich suche eine Wohnung", "Ich mag Musik, Kochen und Spaziergänge.",
       "Du bist freundlich. Du bist ungefähr in meinem Alter.", "Alle", "Sehr laute Musik in der Nacht.",
-      "Wir sprechen über den Haushalt. Jede Person hat Zeit für sich.", "Aufzug wichtig",
-      "Wohnberatung Beispiel", "E-Mail", "beratung@beispiel.de", null, "2026-08-18T10:00:00.000Z"
+      "Wir sprechen über den Haushalt. Jede Person hat Zeit für sich.", "3 Personen", "Aufzug wichtig",
+      "Wohnberatung Beispiel", "E-Mail", "beratung@beispiel.de", "beratung@beispiel.de", "", null, "2026-08-18T10:00:00.000Z"
     ),
     runtime.DB.prepare(insert).bind(
-      "demo-tobias", "Tobias", 34, "Mann", "München", "Giesing", "Ab sofort",
+      "demo-tobias", "Tobias", 34, "Mann", "München", "Giesing", "München", "Giesing", "Ab sofort",
       "Ich habe eine Wohnung", "Ich mag Fußball, Tiere und Brettspiele.",
       "Du bist ruhig und magst Tiere.", "Mann", "Rauchen in der Wohnung.",
-      "Wir kochen manchmal zusammen. Mein Hund wohnt mit uns.", "Stufen sind in Ordnung",
-      "Wohnberatung Beispiel", "Telefon", "0123 456789", null, "2026-08-14T10:00:00.000Z"
+      "Wir kochen manchmal zusammen. Mein Hund wohnt mit uns.", "2 Personen", "Stufen sind in Ordnung",
+      "Wohnberatung Beispiel", "Telefon", "0123 456789", "", "0123 456789", null, "2026-08-14T10:00:00.000Z"
     ),
     runtime.DB.prepare(insert).bind(
-      "demo-samira", "Samira", 25, "Frau", "Augsburg", "Innenstadt", "Ab November 2026",
+      "demo-samira", "Samira", 25, "Frau", "Augsburg", "Innenstadt", "Augsburg", "Innenstadt", "Ab November 2026",
       "Ich suche eine Wohnung", "Ich male gern. Ich mag Cafés und Serien.",
       "Du bist offen und zuverlässig.", "Frau", "Streit und Unordnung.",
-      "Ein ruhiges Zuhause. Ein Plan für Putzen und Einkaufen.", "Rollstuhl-gerecht",
-      "EUTB Beispiel", "E-Mail", "kontakt@beispiel.de", null, "2026-08-10T10:00:00.000Z"
+      "Ein ruhiges Zuhause. Ein Plan für Putzen und Einkaufen.", "4 Personen", "Rollstuhl-gerecht",
+      "EUTB Beispiel", "E-Mail", "kontakt@beispiel.de", "kontakt@beispiel.de", "", null, "2026-08-10T10:00:00.000Z"
     ),
   ]);
 }
@@ -89,9 +94,14 @@ export async function POST(request: Request) {
   const data = await request.formData();
   const id = crypto.randomUUID();
   const age = Number(clean(data.get("age"), 3));
-  const required = ["name", "gender", "city", "about", "lookingFor", "contactName", "contactValue"];
+  const contactEmail = clean(data.get("contactEmail"), 160);
+  const contactPhone = clean(data.get("contactPhone"), 80);
+  const required = ["name", "gender", "city", "searchCity", "about", "lookingFor", "contactName"];
   if (!Number.isInteger(age) || age < 18 || age > 99 || required.some((key) => !clean(data.get(key)))) {
     return Response.json({ error: "Bitte fülle alle wichtigen Felder aus." }, { status: 400 });
+  }
+  if (!contactEmail && !contactPhone) {
+    return Response.json({ error: "Bitte gib eine E-Mail-Adresse oder eine Telefon-Nummer an." }, { status: 400 });
   }
 
   let imageKey: string | null = null;
@@ -107,17 +117,19 @@ export async function POST(request: Request) {
 
   const createdAt = new Date().toISOString();
   await runtime.DB.prepare(`INSERT INTO profiles (
-    id, name, age, gender, city, district, move_in, housing, about,
-    looking_for, preferred_gender, dislikes, important, accessibility,
-    contact_name, contact_type, contact_value, image_key, created_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    id, name, age, gender, city, district, search_city, search_district, move_in, housing, about,
+    looking_for, preferred_gender, dislikes, important, wg_size, accessibility,
+    contact_name, contact_type, contact_value, contact_email, contact_phone, image_key, created_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(
       id, clean(data.get("name"), 80), age, clean(data.get("gender"), 30), clean(data.get("city"), 80),
-      clean(data.get("district"), 80), clean(data.get("moveIn"), 80), clean(data.get("housing"), 80),
+      clean(data.get("district"), 80), clean(data.get("searchCity"), 80), clean(data.get("searchDistrict"), 80),
+      clean(data.get("moveIn"), 80), clean(data.get("housing"), 80),
       clean(data.get("about")), clean(data.get("lookingFor")), clean(data.get("preferredGender"), 30) || "Alle",
-      clean(data.get("dislikes")), clean(data.get("important")), clean(data.get("accessibility"), 160),
-      clean(data.get("contactName"), 100), clean(data.get("contactType"), 30) || "E-Mail",
-      clean(data.get("contactValue"), 160), imageKey, createdAt
+      clean(data.get("dislikes")), clean(data.get("important")), clean(data.get("wgSize"), 40) || "Egal",
+      clean(data.get("accessibility"), 160), clean(data.get("contactName"), 100),
+      contactEmail ? "E-Mail" : "Telefon", contactEmail || contactPhone, contactEmail, contactPhone,
+      imageKey, createdAt
     ).run();
 
   const profile = await runtime.DB.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first();

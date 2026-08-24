@@ -31,6 +31,7 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 .site-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; min-height: 80px; padding: .7rem max(1.25rem, calc((100vw - 1180px) / 2)); background: rgba(255,255,255,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(12px); }
 .brand { display: flex; align-items: center; gap: .65rem; border: 0; background: transparent; font-weight: 900; font-size: 1.25rem; }
 .brand-mark { display: grid; place-items: center; width: 46px; height: 46px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 14px; }
+.site-version { margin-right: auto; padding: .2rem .45rem; color: var(--muted); background: #f0f3f7; border-radius: 7px; font-size: .68rem; font-weight: 800; white-space: nowrap; }
 .site-header nav { display: flex; gap: .4rem; }
 .nav-button { display: flex; align-items: center; gap: .45rem; min-height: 48px; padding: .6rem .9rem; border: 0; border-radius: 12px; background: transparent; font-weight: 700; }
 .nav-button:hover, .nav-button.active { background: var(--blue-soft); color: var(--blue-dark); }
@@ -76,6 +77,7 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 .name-row h3 { margin: 0; font-size: 1.25rem; }
 .name-row span { flex: 0 0 auto; padding: .25rem .5rem; background: #f0f3f7; border-radius: 8px; font-size: .78rem; }
 .place { margin: .35rem 0 .8rem; color: var(--blue-dark); font-weight: 800; }
+.entry-date { margin: -.45rem 0 .75rem; color: var(--muted); font-size: .76rem; }
 .card-about { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 3.1rem; margin-bottom: .8rem; }
 .tag-row { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: auto; }
 .tag-row span { padding: .28rem .48rem; color: #33435a; background: #f2f5f8; border-radius: 8px; font-size: .73rem; font-weight: 700; }
@@ -101,6 +103,7 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 .info-icon { display: grid; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; background: var(--cream); border-radius: 12px; font-size: 1.45rem; }
 .contact-box { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .8rem; padding: 1rem; color: white; background: var(--blue-dark); border-radius: 16px; }
 .contact-box > div { display: flex; gap: .8rem; align-items: center; }
+.contact-box .contact-links { align-items: stretch; flex-direction: column; gap: .4rem; }
 .contact-box h3, .contact-box p { margin-bottom: .1rem; }
 .contact-box a { display: inline-block; padding: .7rem 1rem; color: var(--blue-dark); background: var(--yellow); border-radius: 10px; font-weight: 900; text-decoration: none; }
 .note-box { display: grid; gap: .4rem; margin-top: .8rem; padding: 1rem; background: #fff7d8; border: 1px solid #ead379; border-radius: 16px; font-weight: 800; }
@@ -121,14 +124,15 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 .step.done { color: var(--blue-dark); background: var(--blue-soft); }
 .step.done span { color: white; background: var(--blue); border-color: var(--blue); }
 .create-page form { padding: 1.2rem; background: white; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
-.form-step { display: grid; gap: 1rem; }
+.form-step { display: grid; min-width: 0; gap: 1rem; }
 .hidden-step { position: absolute; left: -99999px; width: 1px; height: 1px; overflow: hidden; }
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.field { display: grid; gap: .35rem; font-weight: 900; }
-.field input, .field textarea { width: 100%; min-height: 52px; padding: .7rem .8rem; border: 2px solid #aeb9c8; border-radius: 11px; font-weight: 400; }
+.field-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 0; gap: 1rem; }
+.field { display: grid; min-width: 0; gap: .35rem; font-weight: 900; }
+.field input, .field textarea { width: 100%; min-width: 0; min-height: 52px; padding: .7rem .8rem; border: 2px solid #aeb9c8; border-radius: 11px; font-weight: 400; }
 .field textarea { min-height: 110px; resize: vertical; }
 .field input:focus, .field textarea:focus { border-color: var(--blue); }
-.choice { margin: 0; padding: 0; border: 0; }
+.contact-hint { margin: 0; color: var(--blue-dark); font-weight: 800; }
+.choice { min-width: 0; margin: 0; padding: 0; border: 0; }
 .choice legend { margin-bottom: .45rem; font-weight: 900; }
 .choice > div { display: flex; flex-wrap: wrap; gap: .5rem; }
 .choice label { position: relative; }
@@ -141,7 +145,7 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 .photo-field img { width: 100%; height: 100%; object-fit: cover; }
 .photo-placeholder { display: grid; place-items: center; width: 100%; height: 100%; background: white; font-size: 2.6rem; }
 .photo-field small { color: var(--muted); }
-.photo-field input { max-width: 100%; }
+.photo-field input { width: 100%; min-width: 0; max-width: 100%; }
 .check { display: flex; align-items: center; gap: .7rem; padding: 1rem; background: #eff8ea; border: 2px solid #8bb579; border-radius: 12px; font-weight: 900; }
 .check input { width: 26px; height: 26px; }
 .error { padding: .7rem; color: #7a1825; background: #ffe6ea; border-radius: 10px; font-weight: 800; }
@@ -152,6 +156,7 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 @media (max-width: 900px) {
   .site-header { align-items: flex-start; padding: .6rem 1rem; }
   .brand span:last-child { display: none; }
+  .site-version { margin-right: 0; }
   .site-header nav { flex: 1; justify-content: flex-end; }
   .nav-button { flex-direction: column; min-height: 58px; padding: .3rem .55rem; font-size: .7rem; }
   .hero { grid-template-columns: 1fr; padding: 2rem; }
@@ -164,6 +169,7 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
   body { font-size: 17px; }
   .page-shell { width: min(100% - 1rem, 1180px); padding-top: .7rem; }
   .site-header { min-height: 70px; }
+  .site-version { display: none; }
   .brand-mark { width: 42px; height: 42px; }
   .hero { min-height: 0; padding: 1.35rem; border-radius: 18px; }
   .hero h1 { font-size: 2.25rem; }
@@ -171,7 +177,9 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
   .hero-actions button { width: 100%; }
   .hero img { width: 150px; margin-top: .8rem; }
   .search-row { grid-template-columns: 1fr; margin-top: 1rem; }
-  .filter-panel, .profile-grid, .detail-grid, .field-grid { grid-template-columns: 1fr; }
+  .filter-panel, .profile-grid, .detail-grid, .field-grid { grid-template-columns: minmax(0, 1fr); }
+  .create-page, .create-page form, .photo-field { width: 100%; min-width: 0; max-width: 100%; }
+  .photo-field input { font-size: .8rem; }
   .result-heading { align-items: center; }
   .profile-card { border-radius: 16px; }
   .card-main { flex-direction: row; gap: .8rem; }
@@ -211,10 +219,10 @@ h3 { font-size: 1.08rem; line-height: 1.25; }
 
 @page { size: A4 portrait; margin: 0; }
 @media print {
-  html, body { width: 210mm; height: 297mm; margin: 0; background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  .site-header, .page-shell, .profile-dialog { display: none !important; }
-  main, .dialog-backdrop { display: block !important; position: static; width: 210mm; height: 297mm; padding: 0; overflow: hidden; background: white; }
-  .print-sheet { position: absolute; inset: 0; display: flex !important; flex-direction: column; width: 210mm; height: 297mm; padding: 11mm; overflow: hidden; color: #13223b; background: white; font-family: Arial, sans-serif; font-size: 11.5pt; line-height: 1.32; }
+  html, body { width: 210mm; height: auto !important; min-height: 0 !important; margin: 0; overflow: hidden; background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .skip-link, .site-header, .page-shell, .profile-dialog { display: none !important; }
+  main, .dialog-backdrop { display: block !important; position: static !important; width: 210mm; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; background: white; }
+  .print-sheet { position: relative; inset: auto; display: flex !important; flex-direction: column; width: 210mm; height: 296mm; margin: 0; padding: 11mm; overflow: hidden; break-after: avoid-page; page-break-after: avoid; color: #13223b; background: white; font-family: Arial, sans-serif; font-size: 11.5pt; line-height: 1.32; }
   .print-sheet header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 5mm; border-bottom: 3px solid #0d55b5; }
   .print-sheet header p { margin: 0 0 1mm; color: #0d55b5; font-weight: 800; }
   .print-sheet header h1 { margin: 0; font-size: 25pt; }

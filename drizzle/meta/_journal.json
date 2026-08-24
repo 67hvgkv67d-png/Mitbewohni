@@ -15,6 +15,13 @@
       "when": 1787166686612,
       "tag": "0001_magenta_stark_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787170371708,
+      "tag": "0002_flimsy_sasquatch",
+      "breakpoints": true
     }
   ]
 }
